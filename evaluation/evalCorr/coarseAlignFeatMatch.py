@@ -27,7 +27,7 @@ sys.path.append('../../model')
 from resnet50 import resnet50
 
 
-from scipy.misc import imresize
+# from scipy.misc import resize
 from scipy import signal
 ## resize image according to the minsize, at the same time resize the x,y coordinate
 
@@ -48,7 +48,7 @@ class CoarseAlign:
             resNetfeat = resnet50()
             featPth = '../../model/pretrained/resnet50_moco.pth'
             param = torch.load(featPth)
-            state_dict = {k.replace("module.", ""): v for k, v in param['model'].items()}
+            state_dict = {k.replace("module.", ""): v for k, v in param.items()}
             msg = 'Loading pretrained model from {}'.format(featPth)
             print (msg)
             resNetfeat.load_state_dict( state_dict )

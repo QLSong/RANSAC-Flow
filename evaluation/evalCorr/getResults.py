@@ -101,7 +101,8 @@ def getFlow(pairID, finePath, flowList, coarsePath, maskPath, multiH, th) :
     
     warper = tgm.HomographyWarper(h * 8,  w * 8)
     
-    coarse = warper.warp_grid(param)
+    # coarse = warper.warp_grid(param)
+    coarse = tgm.warp_grid(warper.grid, param)
     
     flow = F.interpolate(input = flow, scale_factor = 8, mode='bilinear')
     flow = flow.permute(0, 2, 3, 1)
@@ -269,7 +270,26 @@ for i in tqdm(range(nbImg)) :
     
     Itw, Ith = It.size
     flow, match = getFlow_Coarse(i, flowList, args.finePth, args.coarsePth) if args.onlyCoarse else getFlow(i, args.finePth, flowList, args.coarsePth, args.maskPth, args.multiH, args.th)
-    
+    # print(flow)
+    # print(flow.shape, match.shape)
+    match_map = match.data.numpy()[0, :, :, 0]
+    cv2.imwrite('match.jpg', match_map.astype(np.int32)*255)
+    Is.save('img1.jpg')
+    It.save('img2.jpg')
+    flow_1 = flow.data.numpy()[0, :, :, 0]
+    flow_2 = flow.data.numpy()[0, :, :, 1]
+    cv2.imwrite('flow1.jpg', (flow_1+1)/2*255)
+    cv2.imwrite('flow2.jpg', (flow_2+1)/2*255)
+    exit(0)
+    # num = 0
+    # for i in range(match_map.shape[0]):
+    # i = 200
+    # for j in range(match_map.shape[1]):
+    #     if match_map[i, j] > 0.99:
+    #         print(flow[0, i, j])
+    #         num += 1
+    #         if num > 20:
+    #             exit()
     if len(flow) == 0 :
         
          precAllAlign[0] = precAllAlign[th] + np.zeros(8)

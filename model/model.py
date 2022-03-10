@@ -187,8 +187,10 @@ class NetFlowCoarse(nn.Module):
         self.kernelSize = kernelSize
         self.paddingSize = kernelSize // 2
         
-        self.gridY = torch.arange(-self.paddingSize, self.paddingSize + 1).view(1, 1, -1, 1).expand(1, 1, self.kernelSize,  self.kernelSize).contiguous().view(1, -1, 1, 1).type(torch.FloatTensor)
-        self.gridX = torch.arange(-self.paddingSize, self.paddingSize + 1).view(1, 1, 1, -1).expand(1, 1, self.kernelSize,  self.kernelSize).contiguous().view(1, -1, 1, 1).type(torch.FloatTensor)
+        self.gridY = nn.Parameter(torch.arange(-self.paddingSize, self.paddingSize + 1).view(1, 1, -1, 1)\
+            .expand(1, 1, self.kernelSize,  self.kernelSize).contiguous().view(1, -1, 1, 1).type(torch.FloatTensor), requires_grad=False)
+        self.gridX = nn.Parameter(torch.arange(-self.paddingSize, self.paddingSize + 1).view(1, 1, 1, -1)\
+            .expand(1, 1, self.kernelSize,  self.kernelSize).contiguous().view(1, -1, 1, 1).type(torch.FloatTensor), requires_grad=False)
         self.softmax = torch.nn.Softmax(dim=1)
 
         for m in self.modules():
@@ -202,9 +204,9 @@ class NetFlowCoarse(nn.Module):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
-    def cuda(self):
-        super().cuda()
-        self.gridX, self.gridY = self.gridX.cuda(), self.gridY.cuda()
+    # def cuda(self):
+    #     super().cuda()
+    #     self.gridX, self.gridY = self.gridX.cuda(), self.gridY.cuda()
 
         
     def do_forward(self, coef, up8X):

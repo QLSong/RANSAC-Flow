@@ -18,8 +18,10 @@ if not sys.warnoptions:
 
 sys.path.append('../utils/')
 import outil
+sys.path.append('../model/')
+from rexnet import ReXNetV1
 
-from scipy.misc import imresize
+# from scipy.misc import imresize
 from scipy import signal
 ## resize image according to the minsize, at the same time resize the x,y coordinate
 
@@ -34,7 +36,8 @@ class CoarseAlign:
         ## resnet 50 
         resnet_feature_layers = ['conv1','bn1','relu','maxpool','layer1','layer2','layer3']
         if imageNet : 
-            resNetfeat = models.resnet50(pretrained=True)          
+            # resNetfeat = models.resnet50(pretrained=True)          
+            resNetfeat = models.resnet18(pretrained=True)
         else : 
             
             resNetfeat = resnet50()
@@ -48,6 +51,10 @@ class CoarseAlign:
         resnet_module_list = [getattr(resNetfeat,l) for l in resnet_feature_layers]
         last_layer_idx = resnet_feature_layers.index('layer3')
         self.net = torch.nn.Sequential(*resnet_module_list[:last_layer_idx+1])
+        self.dim = 256#1024
+        # self.net = ReXNetV1(width_mult=1.0)
+        # self.net.load_state_dict(torch.load('/workspace/mnt/storage/songqinglong/song/project/Deep-Homography-Estimation-Pytorch-master/truncation_car/rexnetv1_1.0.pth'))
+        # self.dim = 1280
 
         self.net.cuda()
         self.net.eval()
@@ -105,8 +112,9 @@ class CoarseAlign:
             self.HMultiScale = []
             for i in range(len(self.scaleList)) : 
                 feat = F.normalize(self.net(self.preproc(IsList[i]).unsqueeze(0).cuda()))
+                print(feat.shape)
                 Ws, Hs = outil.getWHTensor(feat)
-                self.featsMultiScale.append( feat.contiguous().view(1024, -1) )
+                self.featsMultiScale.append( feat.contiguous().view(self.dim, -1) )
                 self.WMultiScale.append(Ws)
                 self.HMultiScale.append(Hs)
                 
@@ -125,12 +133,11 @@ class CoarseAlign:
             self.featt = F.normalize(self.net(self.preproc(self.It).unsqueeze(0).cuda()))
             self.Wt, self.Ht = outil.getWHTensor(self.featt)
             
-    
-            
             
     def skyFromSeg(self, path) : 
         return self.segNet.getSky(path)
-                
+        
+    # Mt 是分割的mask，去掉部分target不需要匹配的部分            
     def getCoarse(self, Mt) : 
         ## input mask should be array, 2 dimension, h, w
         with torch.no_grad() :  
@@ -141,7 +148,7 @@ class CoarseAlign:
             MtTensor = (MtTensor > 0.5).type(torch.cuda.FloatTensor)
             
             #### -- grid     
-            featt = (self.featt * MtTensor).contiguous().view(1024, -1) 
+            featt = (self.featt * MtTensor).contiguous().view(self.dim, -1) 
             
             index1, index2 = outil.mutualMatching(self.featsMultiScale, featt)
             W1MutualMatch = self.WMultiScale[index1]

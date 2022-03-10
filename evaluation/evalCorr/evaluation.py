@@ -21,7 +21,7 @@ import pickle
 import sys 
 import pandas as pd
 import kornia.geometry as tgm
-from scipy.misc import imresize
+# from scipy.misc import imresize
 
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
@@ -139,7 +139,10 @@ if args.resumePth:
     print (msg)
     
     for key in list(param.keys()) : 
-        network[key].load_state_dict( param[key] ) 
+        new_param = {}
+        for k,v in param[key].items():
+            new_param[k.replace('module.', '')] = v
+        network[key].load_state_dict( new_param ) 
         network[key].eval()
 
 
@@ -216,7 +219,9 @@ with torch.no_grad() :
             if bestPara is None : 
                 break
             bestPara = torch.from_numpy(bestPara).unsqueeze(0).cuda()
-            flowCoarse = warper.warp_grid(bestPara)
+            # warper.precompute_warp_grid(bestPara)
+            flowCoarse = tgm.warp_grid(warper.grid, bestPara)
+            # flowCoarse = warper(bestPara)
             
             flowFine, matchFine, flowFineDown8, matchFineDown8 = PredFlowMask(coarseModel.IsTensor, featt, flowCoarse, grid, network)
             

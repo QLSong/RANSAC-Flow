@@ -133,7 +133,8 @@ def run(args) :
         
     
     for key in list(network.keys()) : 
-        network[key].cuda()
+        # network[key].cuda()
+        network[key] = torch.nn.DataParallel(network[key].cuda())
         typeData = torch.cuda.FloatTensor
     
     # Network initialization
@@ -292,7 +293,7 @@ def run(args) :
             bestPrec = valPrecEpoch
             pth = {}
             for key in list(network.keys()) : 
-                pth[key] = network[key].state_dict()
+                pth[key] = network[key].module.state_dict()
                
             torch.save(pth, outNet)
             LastUpdate = epoch
@@ -301,7 +302,7 @@ def run(args) :
             outNet = os.path.join(args.outDir, 'checkPoint_Epoch{:d}_Lr{:.3f}_Lf{:.5f}_Lm{:.5f}_Lg{:.5f}'.format(epoch, trainLossLr, trainLossCycle, trainLossMatch, trainLossGrad))
             pth = {}
             for key in list(network.keys()) : 
-                pth[key] = network[key].state_dict()
+                pth[key] = network[key].module.state_dict()
                 
             torch.save(pth, outNet)
             
