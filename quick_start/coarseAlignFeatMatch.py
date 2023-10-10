@@ -10,15 +10,15 @@ import torch.nn.functional as F
    
 import torchvision.models as models
 import pickle 
-
+import cv2
 import pandas as pd
 import sys 
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
 
-sys.path.append('../utils/')
+sys.path.append('/workspace/mnt/storage/songqinglong/song/project/RANSAC-Flow-src/utils/')
 import outil
-sys.path.append('../model/')
+sys.path.append('/workspace/mnt/storage/songqinglong/song/project/RANSAC-Flow-src/model/')
 from rexnet import ReXNetV1
 
 # from scipy.misc import imresize
@@ -80,7 +80,7 @@ class CoarseAlign:
         
         else :
             self.scaleList = np.linspace(scaleR, 1, nbScale // 2 + 1).tolist() + np.linspace(1, 1 / scaleR, nbScale // 2 + 1).tolist()[1 :] 
-        print (self.scaleList)
+        # print (self.scaleList)
         
         
     
@@ -112,7 +112,7 @@ class CoarseAlign:
             self.HMultiScale = []
             for i in range(len(self.scaleList)) : 
                 feat = F.normalize(self.net(self.preproc(IsList[i]).unsqueeze(0).cuda()))
-                print(feat.shape)
+                # print(feat.shape)
                 Ws, Hs = outil.getWHTensor(feat)
                 self.featsMultiScale.append( feat.contiguous().view(self.dim, -1) )
                 self.WMultiScale.append(Ws)
@@ -165,7 +165,12 @@ class CoarseAlign:
             if len(match1) < self.nbPoint : 
                 return None, []
             bestParam, _, indexInlier, _ = outil.RANSAC(self.nbIter, match1, match2, self.tolerance, self.nbPoint, self.Transform) 
-            
+            w=540
+            h=960
+            match_pt1 = torch.cat((H1MutualMatch.unsqueeze(1)*h + h, W1MutualMatch.unsqueeze(1)*w + w), dim=1).cpu().numpy()
+            match_pt2 = torch.cat((H2MutualMatch.unsqueeze(1)*h + h, W2MutualMatch.unsqueeze(1)*w + w), dim=1).cpu().numpy()
+            H_cv2, _ = cv2.findHomography(match_pt2, match_pt1, cv2.RANSAC)
+            return H_cv2
             if bestParam is None : 
             
                 return None, []
